@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jasmine Reads</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234a0e1c'/%3E%3Ctext x='32' y='47' font-size='42' text-anchor='middle' fill='%23cfa65e' font-family='Georgia,serif' font-weight='bold'%3EJ%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Pinyon+Script&family=Jost:wght@400;500&display=swap">
 <style>
 :root{--ox:#2b0810;--wine:#4a0e1c;--rose:#e9b8c0;--gold:#cfa65e;--ivory:#f7ebe6;--mute:#c79aa3;--line:rgba(233,184,192,.22);color-scheme:dark}
@@ -17,6 +18,7 @@ header h1{font-size:clamp(46px,10vw,88px);line-height:1;margin:6px 0 10px}
 header p{font:italic 500 21px "Cormorant Garamond",serif;color:var(--rose);margin:0 auto;max-width:34ch}
 .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:24px 0;padding:14px 0;border-block:1px solid var(--line)}
 input,textarea,select{font:inherit;color:var(--ivory);background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:999px;padding:11px 16px;max-width:100%}
+#q{width:300px;max-width:100%}
 textarea{border-radius:16px;width:100%;min-height:120px;resize:vertical}
 input::placeholder,textarea::placeholder{color:var(--mute)}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
@@ -133,16 +135,18 @@ else if(v=="form"){const d=draft;
 A.innerHTML=`<button data-a="adm" data-v="${d.id?"mine":"add"}">← Back</button><h2 style="font-size:36px;margin:14px 0">${d.id?"Edit book":"Your review"}</h2>
 <div class="form"><div class="detail" style="grid-template-columns:120px 1fr;gap:16px;margin:0"><div id="pv">${cover(d)}</div><div><p class="hint">Cover</p><label>Use my own photo<input type="file" id="ph" accept="image/*"></label></div></div>
 <label>Title<input id="f_t" value="${esc(d.title)}"></label><label>Author<input id="f_a" value="${esc(d.author)}"></label>
-<label>Genre<input id="f_g" list="gl" value="${esc(d.genre)}"><datalist id="gl">${[...new Set(books.map(b=>b.genre).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("")}</datalist></label>
+<label>Genre<select id="f_g"><option value="">Choose a genre</option>${GENRES.map(g=>`<option value="${esc(g)}" ${g==d.genre?"selected":""}>${esc(g)}</option>`).join("")}<option value="__o" ${d.genre&&!GENRES.includes(d.genre)?"selected":""}>Other…</option></select></label><input id="f_go" placeholder="Type your own genre" value="${d.genre&&!GENRES.includes(d.genre)?esc(d.genre):""}" ${d.genre&&!GENRES.includes(d.genre)?"":"hidden"}>
 <div>My rating<div id="st5">${[1,2,3,4,5].map(n=>`<button class="star ${n<=d.rating?"on":""}" data-a="rate" data-v="${n}" aria-label="${n} stars">★</button>`).join("")}</div></div>
 <label>What I thought<textarea id="f_r" style="min-height:180px">${esc(d.review)}</textarea></label>
 <label>About the book<textarea id="f_d">${esc(d.description)}</textarea></label>
 <button class="big primary" data-a="save">Save to my shelf</button><p id="st"></p></div>`;
+$("f_g").onchange=()=>{$("f_go").hidden=$("f_g").value!="__o"};
 $("ph").onchange=e=>{const f=e.target.files[0];if(f){d.file=f;$("pv").innerHTML=`<div class="cover has"><img src="${URL.createObjectURL(f)}" alt=""></div>`}}}
 else if(v=="mine"){await load();A.innerHTML=`${back}<h2 style="font-size:36px;margin:14px 0">My books</h2>${books.length?books.map(b=>`<div class="q"><strong>${esc(b.title)}</strong> <small>${esc(b.author)}</small><div style="margin-top:8px"><button data-a="edit" data-v="${b.id}">Edit</button> <button data-a="del" data-v="${b.id}">Delete</button></div></div>`).join(""):msg("No books yet. Tap Back, then Add a book.")}`}
 else if(v=="rev"){const{data}=await sb.from("reviews").select("*,books(title)").eq("approved",false).order("created_at");
 A.innerHTML=`${back}<h2 style="font-size:36px;margin:14px 0">Reviews waiting for you</h2><p class="hint">Nothing shows on the site until you tap Approve.</p>${(data||[]).length?data.map(r=>`<div class="q"><small>On ${esc(r.books?.title)}</small><div><span class="stars">${stars(r.rating)}</span> <strong>${esc(r.name)}</strong></div><p>${esc(r.body)}</p><button class="primary" data-a="ok" data-v="${r.id}">Approve</button> <button data-a="no" data-v="${r.id}">Delete</button></div>`).join(""):msg("Nothing waiting. New reviews will show up here.")}`}}
 
+const GENRES=["Fantasy","Romance","Classics","Mystery & Thriller","Sci-Fi","Historical Fiction","Contemporary Fiction","Young Adult","Horror","Self-help","Non-fiction","Memoir","Poetry","Faith & Spirituality"];
 const blank=()=>({title:"",author:"",genre:"",description:"",cover_url:"",rating:5,review:""});
 async function compress(f){const bm=await createImageBitmap(f);const s=Math.min(1,700/bm.width);const c=document.createElement("canvas");c.width=bm.width*s;c.height=bm.height*s;c.getContext("2d").drawImage(bm,0,0,c.width,c.height);return new Promise(r=>c.toBlob(r,"image/jpeg",.82))}
 
@@ -152,7 +156,7 @@ else if(a=="book")location.hash="book/"+v;
 else if(a=="adm")adminView(v);
 else if(a=="logout"){await sb.auth.signOut();location.hash="";location.reload()}
 else if(a=="manual"){draft=blank();adminView("form")}
-else if(a=="pick"){const r=results[v];draft=Object.assign(blank(),{title:r.title,author:(r.author_name||[])[0]||"",genre:(r.subject||[])[0]||"",cover_url:r.cover_i?`https://covers.openlibrary.org/b/id/${r.cover_i}-L.jpg`:""});
+else if(a=="pick"){const r=results[v];draft=Object.assign(blank(),{title:r.title,author:(r.author_name||[])[0]||"",genre:"",cover_url:r.cover_i?`https://covers.openlibrary.org/b/id/${r.cover_i}-L.jpg`:""});
 try{const w=await(await fetch(`https://openlibrary.org${r.key}.json`)).json();const d=w.description;draft.description=(typeof d=="string"?d:d?.value||"").split("\r\n----")[0].trim()}catch(x){}
 adminView("form")}
 else if(a=="rate"){draft.rating=+v;document.querySelectorAll(".star").forEach((s,i)=>s.classList.toggle("on",i<+v))}
@@ -164,7 +168,7 @@ else if(a=="save"){const st=$("st");const title=$("f_t").value.trim();if(!title)
 st.className="ok";st.textContent="Saving…";t.disabled=true;
 try{let url=draft.cover_url;
 if(draft.file){const p=`${Date.now()}.jpg`;const up=await sb.storage.from("covers").upload(p,await compress(draft.file),{contentType:"image/jpeg"});if(up.error)throw up.error;url=sb.storage.from("covers").getPublicUrl(p).data.publicUrl}
-const row={title,author:$("f_a").value.trim(),genre:$("f_g").value.trim(),rating:draft.rating,review:$("f_r").value,description:$("f_d").value,cover_url:url};
+const row={title,author:$("f_a").value.trim(),genre:$("f_g").value=="__o"?$("f_go").value.trim():$("f_g").value,rating:draft.rating,review:$("f_r").value,description:$("f_d").value,cover_url:url};
 const{error}=draft.id?await sb.from("books").update(row).eq("id",draft.id):await sb.from("books").insert(row);if(error)throw error;
 await adminView("mine");}catch(x){t.disabled=false;st.className="err";st.textContent="That didn't save. Check your internet and tap Save again."}}});
 addEventListener("hashchange",route);route();
